@@ -2,18 +2,15 @@
 
 int match(char *pattern, char *text)
 {
-    for (size_t i = 0; i < strlen(pattern); i++)
+    if (*pattern != *text)
     {
-        if (!(i < strlen(text)))
-        {
-            return NO_MATCH;
-        }
-
-        if (pattern[i] != text[i])
-        {
-            return NO_MATCH;
-        }
+        return NO_MATCH;
     }
 
-    return MATCH;
+    if (*pattern == '\0')
+    {
+        return MATCH;
+    }
+
+    return match(pattern + 1, text + 1);
 }
