@@ -32,6 +32,14 @@ int main()
 {
     expectMatch("abc", "abc");
     expectNoMatch("abc", "aaa");
+    expectMatch("a*", "aaaaaa");
+    expectMatch("a*", "");
+    expectMatch("a*a", "aa");
+    expectMatch("a*b", "ab");
+    expectMatch("a*b", "aaab");
+    expectNoMatch("a*b", "a");
+    expectMatch("a*b*c*", "accccc");
+    printf("All OK\n");
 
     return 0;
 }
