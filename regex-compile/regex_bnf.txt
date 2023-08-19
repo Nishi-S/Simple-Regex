@@ -1,0 +1,5 @@
+﻿<pattern> ::= <character> <unary-operator>? <pattern>
+            | '(' <pattern> ')' <unary-operator>? <pattern>
+            | ε
+
+<unary-operator> ::= '*'
