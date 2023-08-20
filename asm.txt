@@ -3,5 +3,30 @@ label 0
 char a
 jmp 0
 label 1
+split 2 3 
+label 2
+char b
+jmp 2
+label 3
+char 1
+split 4 5 
+label 4
 char a
+jmp 4
+label 5
+split 6 7 
+label 6
+char a
+jmp 6
+label 7
+split 8 9 
+label 8
+char a
+jmp 8
+label 9
+split 10 11 
+label 10
+char a
+jmp 10
+label 11
 match

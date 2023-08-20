@@ -37,10 +37,19 @@ static size_t countNumLabel(char *mnemonic)
 Inst *assemble(char *mnemonic)
 {
     size_t numLabel = countNumLabel(mnemonic);
-    size_t numInst = countNumNL(mnemonic) - numLabel;
+    size_t numInst = countNumNL(mnemonic) - numLabel + 1;
 
-    Inst *pc = calloc(numInst, sizeof(Inst));
-    Inst **label = calloc(numLabel, sizeof(Inst *));
+    Inst *pc = (Inst *)malloc(numInst * sizeof(Inst));
+    Inst **label = (Inst **)malloc(numLabel * sizeof(Inst *));
+
+    if (!pc || !label)
+    {
+        char errmsg[100];
+        strerror_s(errmsg, 100, errno);
+        fprintf(stderr, "%s\n", errmsg);
+        exit(EXIT_FAILURE);
+    }
+
     Inst *curpc = pc;
     Inst **curlabel = label;
     char *curMnemonic = mnemonic;
@@ -51,7 +60,8 @@ Inst *assemble(char *mnemonic)
 
         if (nl == NULL)
         {
-            break;
+            fprintf(stderr, "match 命令を最後に挿入する必要があります\n");
+            exit(EXIT_FAILURE);
         }
 
         if (strncmp(line, "char", sizeof("char") - 1) == 0)
@@ -63,33 +73,41 @@ Inst *assemble(char *mnemonic)
         else if (strncmp(line, "match", sizeof("match") - 1) == 0)
         {
             curpc->opcode = OP_MATCH;
-            curpc++;
+            break;
         }
         else if (strncmp(line, "jmp", sizeof("jmp") - 1) == 0)
         {
-            char *pxpos = NULL;
+            char **dummy = NULL;
             curpc->opcode = OP_JMP;
-            curpc->xpos = strtoul(line + sizeof("jmp"), &pxpos, 10);
+            curpc->xlabel = strtoull(line + sizeof("jmp"), dummy, 10);
             curpc++;
         }
         else if (strncmp(line, "split", sizeof("split") - 1) == 0)
         {
-            char *pxpos = NULL, *pypos = NULL;
+            char *xpos = NULL, **dummy = NULL;
             curpc->opcode = OP_SPLIT;
-            curpc->xpos = strtoul(line + sizeof("split"), &pxpos, 10);
-            curpc->ypos = strtoul(pxpos, &pypos, 10);
+            curpc->xlabel = strtoull(line + sizeof("split"), &xpos, 10);
+            curpc->ylabel = strtoull(xpos, dummy, 10);
             curpc++;
         }
         else if (strncmp(line, "label", sizeof("label") - 1) == 0)
         {
             *curlabel = curpc;
-            curlabel++;
+            if ((size_t)(curlabel - label) < numLabel)
+            {
+                curlabel++;
+            }
         }
         else
         {
-            break;
+            for (size_t i = 0; line[i] && line[i] != '\n'; i++)
+            {
+                fputc(line[i], stderr);
+            }
+            fputc('\n', stderr);
+            fprintf(stderr, "^ 対応していない命令列です\n");
+            exit(EXIT_FAILURE);
         }
-
         curMnemonic = nl + 1;
     }
 
@@ -97,12 +115,12 @@ Inst *assemble(char *mnemonic)
     {
         if (curpc->opcode == OP_JMP)
         {
-            curpc->x = label[curpc->xpos];
+            curpc->x = label[curpc->xlabel];
         }
         else if (curpc->opcode == OP_SPLIT)
         {
-            curpc->x = label[curpc->xpos];
-            curpc->y = label[curpc->ypos];
+            curpc->x = label[curpc->xlabel];
+            curpc->y = label[curpc->ylabel];
         }
     }
 
