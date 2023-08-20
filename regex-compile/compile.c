@@ -43,7 +43,8 @@ static void genUnary(char op, Node *node, FILE *stream)
     switch (op)
     {
     case '*':
-        fprintf(stream, "split %zd %zd \n", curLabel, curLabel + 1);
+        fprintf(stream, "label %zd\n", labelNum++);
+        fprintf(stream, "split %zd %zd \n", curLabel + 1, curLabel + 2);
         fprintf(stream, "label %zd\n", labelNum++);
         gen(node, stream);
         fprintf(stream, "jmp %zd\n", curLabel);

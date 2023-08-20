@@ -4,6 +4,11 @@
 #include <errno.h>
 #include <malloc.h>
 #include <stdio.h>
+#include <windows.h>
+
+#define ESC "\033["
+#define GREEN ESC "42m"
+#define DEFAULT ESC "49m"
 
 #define READ_FILE_BUFFER 256 * 1024
 
@@ -72,6 +77,12 @@ static char *readAssemblyFromStdin()
 
 int main(int argc, char *argv[])
 {
+    HANDLE stdOut = GetStdHandle(STD_OUTPUT_HANDLE);
+    DWORD consoleMode = 0;
+    GetConsoleMode(stdOut, &consoleMode);
+    consoleMode = consoleMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+    SetConsoleMode(stdOut, consoleMode);
+
     char *mnemonic = NULL;
     if (argc == 3)
     {
@@ -106,15 +117,30 @@ int main(int argc, char *argv[])
 
     Inst *pc = assemble(mnemonic);
     char *sp = argv[1];
-    MatchResult result = recursive(pc, sp);
+    MatchResult result = vm(pc, sp);
 
-    if (result == MATCH_SUCCESS)
+    if (result.result == MATCH_SUCCESS)
     {
-        printf_s("match success\n");
+        for (char *c = sp; *c; c++)
+        {
+            if (result.posMatch.start <= c && c <= result.posMatch.end)
+            {
+                printf(GREEN "%c" DEFAULT, *c);
+            }
+            else
+            {
+                printf("%c", *c);
+            }
+        }
+        // for (char *c = result.posMatch.start; c <= result.posMatch.end; c++)
+        // {
+        //     putchar(c[0]);
+        // }
+        putchar('\n');
     }
     else
     {
-        printf_s("match failure\n");
+        printf("match failure\n");
     }
 
     return 0;

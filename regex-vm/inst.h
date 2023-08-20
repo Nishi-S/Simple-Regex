@@ -6,8 +6,18 @@ typedef enum
 {
     MATCH_SUCCESS,
     MATCH_FAILURE,
-    MATCH_ABORT,
-} MatchResult;
+} MatchResponse;
+
+typedef struct MatchResult MatchResult;
+struct MatchResult
+{
+    MatchResponse result;
+    struct
+    {
+        char *start;
+        char *end;
+    } posMatch;
+};
 
 typedef enum
 {
@@ -22,6 +32,7 @@ struct Inst
 {
     OpcodeKind opcode;
     char c;
+    size_t num;
     union {
         Inst *x;
         size_t xlabel;
@@ -32,4 +43,5 @@ struct Inst
     };
 };
 
-MatchResult recursive(Inst *pc, char *sp);
+MatchResult vm(Inst *pc, char *sp);
+char *recursive(Inst *pc, char *sp);
