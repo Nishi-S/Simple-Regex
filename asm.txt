@@ -1,9 +1,12 @@
 char a
-label 0
-split 1 2
-label 1
+char p
+char p
+char l
+char e
 char b
-jmp 0
-label 2
-char c
+char a
+char n
+char a
+char n
+char a
 match

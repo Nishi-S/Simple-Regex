@@ -37,7 +37,7 @@ static size_t countNumLabel(char *mnemonic)
 Inst *assemble(char *mnemonic)
 {
     size_t numLabel = countNumLabel(mnemonic);
-    size_t numInst = countNumNL(mnemonic);
+    size_t numInst = countNumNL(mnemonic) + 1;
 
     Inst *pc = (Inst *)malloc(numInst * sizeof(Inst));
     Inst **label = (Inst **)malloc(numLabel * sizeof(Inst *));
