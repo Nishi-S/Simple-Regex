@@ -1,12 +1,11 @@
+char k
+label 0
+split 1 2 
+label 1
 char a
-char p
-char p
-char l
-char e
 char b
-char a
-char n
-char a
-char n
-char a
+char c
+jmp 0
+label 2
+char k
 match

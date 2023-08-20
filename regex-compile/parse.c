@@ -2,6 +2,7 @@
 
 static Node *pattern(char **pregex);
 static Node *character(char c);
+static Node *empty();
 static Node *terminal();
 static Node *newNode(NodeKind kind, Node *lhs, Node *rhs);
 static Node *newNodeChar(char val);
@@ -10,6 +11,7 @@ static char consumeChar(char **pregex);
 static char consumeUnary(char **pregex);
 static char expectOp(char **pregex, char op);
 static int isUnaryOperator(char c);
+static int isOperator(char c);
 
 Node *parse(char *regex)
 {
@@ -56,14 +58,17 @@ static Node *pattern(char **pregex)
         return terminal();
     }
 
-    parseError(*pregex);
-    Node *dummy = NULL;
-    return dummy;
+    return empty();
 }
 
 static Node *character(char c)
 {
     return newNodeChar(c);
+}
+
+static Node *empty()
+{
+    return newNode(ND_EMPTY, NULL, NULL);
 }
 
 static Node *terminal()
@@ -74,9 +79,10 @@ static Node *terminal()
 static char consumeOp(char **pregex, char op)
 {
     char c = **pregex;
+
     if (c == op)
     {
-        (*pregex)++;
+        *pregex += 1;
         return c;
     }
 
@@ -86,14 +92,14 @@ static char consumeOp(char **pregex, char op)
 static char consumeChar(char **pregex)
 {
     char c = **pregex;
-    if (isUnaryOperator(c) || c == '\0')
+    if (isOperator(c) || c == '\0')
     {
         return '\0';
     }
 
     if (isprint(c))
     {
-        (*pregex)++;
+        *pregex += 1;
         return c;
     }
 
@@ -105,7 +111,7 @@ static char consumeUnary(char **pregex)
     char c = **pregex;
     if (isUnaryOperator(c))
     {
-        (*pregex)++;
+        *pregex += 1;
         return c;
     }
 
@@ -117,7 +123,7 @@ static char expectOp(char **pregex, char op)
     char c = **pregex;
     if (c == op)
     {
-        (*pregex)++;
+        *pregex += 1;
         return c;
     }
 
@@ -152,4 +158,30 @@ static int isUnaryOperator(char c)
     default:
         return '\0';
     }
+}
+
+static int isBinaryOperator(char c)
+{
+    switch (c)
+    {
+    case '|':
+        return c;
+
+    default:
+        return '\0';
+    }
+}
+
+static int isOperator(char c)
+{
+    switch (c)
+    {
+    case '(':
+    case ')':
+    case '[':
+    case ']':
+        return c;
+    }
+
+    return isUnaryOperator(c) || isBinaryOperator(c);
 }

@@ -10,11 +10,11 @@ function expect
         [switch]$notMatch
     )
     
-    Write-Host "`"$regex`" => `"$text`" " -NoNewline
     $ret = &$compiler $regex | &$vm $text
     if ($ret -ne $expect)
     {
-        Write-Host "NG"
+        Write-Host "`"$regex`" => `"$text`" " -NoNewline 
+        Write-Host "expect $expect, but got $ret"
     }
     else
     {
@@ -26,3 +26,4 @@ Write-Host "============ concat test ============"
 expect "applebanana" "applebanana" "applebanana"
 expect "" "" ""
 expect -notMatch "aaa" "abc" 
+expect "(aaa)" "aaa" "aaa"

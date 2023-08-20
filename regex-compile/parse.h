@@ -10,6 +10,7 @@ typedef enum
     ND_CONCAT,
     ND_CHAR,
     ND_UNARY,
+    ND_EMPTY,
 } NodeKind;
 
 typedef struct Node Node;
