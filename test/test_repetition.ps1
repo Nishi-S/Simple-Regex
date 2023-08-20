@@ -23,9 +23,23 @@ function expect
 }
 
 Write-Host "============ repetition test ============"
+# *
 expect "a*" "aa" "aa"
 expect "a*" "" ""
 expect -notMatch "aa*" ""
 expect "a*" "abc" "a"
 expect "k(abc)*k" "kabcabck" "kabcabck"
 expect "k(abc)*k" "kk" "kk"
+# +
+expect "a+" "aa" "aa"
+expect -notMatch "a+" ""
+expect "a+" "abc" "a"
+expect "k(abc)+k" "kabcabck" "kabcabck"
+expect -notMatch "k(abc)+k" "kk"
+# ?
+expect "aa?" "a" "a"
+expect "a?" "" ""
+expect -notMatch "aa?" ""
+expect "a?" "abc" "a"
+expect "k(abc)?k" "kabck" "kabck"
+expect "k(abc)?k" "kk" "kk"

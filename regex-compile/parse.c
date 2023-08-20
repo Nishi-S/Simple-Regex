@@ -153,6 +153,8 @@ static int isUnaryOperator(char c)
     switch (c)
     {
     case '*':
+    case '+':
+    case '?':
         return c;
 
     default:
