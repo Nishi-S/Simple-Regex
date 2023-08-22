@@ -9,6 +9,7 @@ typedef enum
 {
     ND_CONCAT,
     ND_CHAR,
+    ND_ESCAPE,
     ND_UNARY,
     ND_EMPTY,
 } NodeKind;

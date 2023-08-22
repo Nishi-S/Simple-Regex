@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+#include <ctype.h>
 #include <stdlib.h>
 
 typedef enum
@@ -22,6 +23,7 @@ struct MatchResult
 typedef enum
 {
     OP_CHAR,
+    OP_ECHAR,
     OP_MATCH,
     OP_JMP,
     OP_SPLIT,

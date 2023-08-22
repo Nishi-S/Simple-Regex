@@ -20,6 +20,17 @@ char *recursive(Inst *pc, char *sp)
         }
         return recursive(pc + 1, sp + 1);
 
+    case OP_ECHAR:
+        switch (pc->c)
+        {
+        case 'd':
+            return isdigit(*sp) ? recursive(pc + 1, sp + 1) : NULL;
+        case 'w':
+            return isalnum(*sp) || *sp == '_' ? recursive(pc + 1, sp + 1) : NULL;
+        case 's':
+            return isspace(*sp) ? recursive(pc + 1, sp + 1) : NULL;
+        }
+
     case OP_MATCH:
         return sp - 1;
 

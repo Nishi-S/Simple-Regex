@@ -2,16 +2,19 @@
 
 static Node *pattern(char **pregex);
 static Node *character(char c);
+static Node *escapedCharacter(char c);
 static Node *empty();
 static Node *terminal();
 static Node *newNode(NodeKind kind, Node *lhs, Node *rhs);
 static Node *newNodeChar(char val);
-static char consumeOp(char **pregex, char op);
+static char consume(char **pregex, char op);
 static char consumeChar(char **pregex);
 static char consumeUnary(char **pregex);
-static char expectOp(char **pregex, char op);
+static char expect(char **pregex, char expected);
+static char expectEscapedChar(char **pregex);
 static int isUnaryOperator(char c);
 static int isOperator(char c);
+static int isEscapedCharacter(char c);
 
 Node *parse(char *regex)
 {
@@ -27,6 +30,18 @@ void parseError(char *subject)
 
 static Node *pattern(char **pregex)
 {
+    if (consume(pregex, '\\'))
+    {
+        Node *node = escapedCharacter(expectEscapedChar(pregex));
+        char unary = consumeUnary(pregex);
+        if (unary)
+        {
+            node = newNode(ND_UNARY, node, NULL);
+            node->val = unary;
+        }
+        return newNode(ND_CONCAT, node, pattern(pregex));
+    }
+
     char c = consumeChar(pregex);
     if (c)
     {
@@ -40,10 +55,10 @@ static Node *pattern(char **pregex)
         return newNode(ND_CONCAT, node, pattern(pregex));
     }
 
-    if (consumeOp(pregex, '('))
+    if (consume(pregex, '('))
     {
         Node *node = pattern(pregex);
-        expectOp(pregex, ')');
+        expect(pregex, ')');
         char unary = consumeUnary(pregex);
         if (unary)
         {
@@ -66,6 +81,11 @@ static Node *character(char c)
     return newNodeChar(c);
 }
 
+static Node *escapedCharacter(char c)
+{
+    return newNode(ND_ESCAPE, newNodeChar(c), NULL);
+}
+
 static Node *empty()
 {
     return newNode(ND_EMPTY, NULL, NULL);
@@ -76,7 +96,7 @@ static Node *terminal()
     return newNodeChar('\0');
 }
 
-static char consumeOp(char **pregex, char op)
+static char consume(char **pregex, char op)
 {
     char c = **pregex;
 
@@ -118,10 +138,10 @@ static char consumeUnary(char **pregex)
     return '\0';
 }
 
-static char expectOp(char **pregex, char op)
+static char expect(char **pregex, char expected)
 {
     char c = **pregex;
-    if (c == op)
+    if (c == expected)
     {
         *pregex += 1;
         return c;
@@ -131,9 +151,29 @@ static char expectOp(char **pregex, char op)
     return '\0';
 }
 
+static char expectEscapedChar(char **pregex)
+{
+    char c = **pregex;
+    if (isEscapedCharacter(c))
+    {
+        *pregex += 1;
+        return c;
+    }
+
+    parseError(*pregex - 1);
+    return '\0';
+}
+
 static Node *newNode(NodeKind kind, Node *lhs, Node *rhs)
 {
     Node *node = calloc(1, sizeof(Node));
+    if (!node)
+    {
+        char errMsg[100];
+        strerror_s(errMsg, sizeof(errMsg), errno);
+        fprintf(stderr, "%s\n", errMsg);
+        exit(EXIT_FAILURE);
+    }
     node->kind = kind;
     node->lhs = lhs;
     node->rhs = rhs;
@@ -143,6 +183,13 @@ static Node *newNode(NodeKind kind, Node *lhs, Node *rhs)
 static Node *newNodeChar(char val)
 {
     Node *node = calloc(1, sizeof(Node));
+    if (!node)
+    {
+        char errMsg[100];
+        strerror_s(errMsg, sizeof(errMsg), errno);
+        fprintf(stderr, "%s\n", errMsg);
+        exit(EXIT_FAILURE);
+    }
     node->kind = ND_CHAR;
     node->val = val;
     return node;
@@ -156,10 +203,9 @@ static int isUnaryOperator(char c)
     case '+':
     case '?':
         return c;
-
-    default:
-        return '\0';
     }
+
+    return '\0';
 }
 
 static int isBinaryOperator(char c)
@@ -168,10 +214,9 @@ static int isBinaryOperator(char c)
     {
     case '|':
         return c;
-
-    default:
-        return '\0';
     }
+
+    return '\0';
 }
 
 static int isOperator(char c)
@@ -182,8 +227,21 @@ static int isOperator(char c)
     case ')':
     case '[':
     case ']':
+    case '\\':
         return c;
     }
 
     return isUnaryOperator(c) || isBinaryOperator(c);
+}
+
+static int isEscapedCharacter(char c)
+{
+    switch (c)
+    {
+    case 'd':
+    case 'w':
+    case 's':
+        return c;
+    }
+    return '\0';
 }

@@ -65,10 +65,25 @@ Inst *assemble(char *mnemonic)
             exit(EXIT_FAILURE);
         }
 
-        if (strncmp(line, "char", sizeof("char") - 1) == 0)
+        if (strncmp(line, "jmp ", sizeof("jmp ") - 1) == 0)
+        {
+            char **dummy = NULL;
+            curpc->opcode = OP_JMP;
+            curpc->xlabel = strtoull(line + sizeof("jmp"), dummy, 10);
+            curpc->num = num++;
+            curpc++;
+        }
+        else if (strncmp(line, "char ", sizeof("char ") - 1) == 0)
         {
             curpc->opcode = OP_CHAR;
             curpc->c = line[sizeof("char")];
+            curpc->num = num++;
+            curpc++;
+        }
+        else if (strncmp(line, "echar ", sizeof("echar ") - 1) == 0)
+        {
+            curpc->opcode = OP_ECHAR;
+            curpc->c = line[sizeof("echar")];
             curpc->num = num++;
             curpc++;
         }
@@ -78,15 +93,7 @@ Inst *assemble(char *mnemonic)
             curpc->num = num++;
             break;
         }
-        else if (strncmp(line, "jmp", sizeof("jmp") - 1) == 0)
-        {
-            char **dummy = NULL;
-            curpc->opcode = OP_JMP;
-            curpc->xlabel = strtoull(line + sizeof("jmp"), dummy, 10);
-            curpc->num = num++;
-            curpc++;
-        }
-        else if (strncmp(line, "split", sizeof("split") - 1) == 0)
+        else if (strncmp(line, "split ", sizeof("split ") - 1) == 0)
         {
             char *xpos = NULL, **dummy = NULL;
             curpc->opcode = OP_SPLIT;
@@ -95,7 +102,7 @@ Inst *assemble(char *mnemonic)
             curpc->num = num++;
             curpc++;
         }
-        else if (strncmp(line, "label", sizeof("label") - 1) == 0)
+        else if (strncmp(line, "label ", sizeof("label ") - 1) == 0)
         {
             *curlabel = curpc;
             if ((size_t)(curlabel - label) < numLabel)

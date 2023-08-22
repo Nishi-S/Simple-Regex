@@ -3,3 +3,12 @@
             | ε
 
 <unary-operator> ::= '*'
+                   | '+'
+                   | '?'
+
+<character> ::= <escaped-character>
+              | <ranged-character>
+              | <ascii-character-without-operator>
+
+<escaped-character> ::= '\' ( 'd' | 'w' | 's' )
+<ranged-character> ::= '[' <character>+ ']' 

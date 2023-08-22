@@ -43,3 +43,15 @@ expect -notMatch "aa?" ""
 expect "a?" "abc" "a"
 expect "k(abc)?k" "kabck" "kabck"
 expect "k(abc)?k" "kk" "kk"
+# *+
+expect "a*a+" "a" "a"
+expect -notMatch "a*a+" ""
+expect "k(a*k+)*k" "kkakkk"
+
+# \w \s \d
+expect "\w+" "Hello123" "Hello123"
+expect "\w+" "Good_Morning" "Good_Morning"
+expect "\s+" " `t" " `t"
+expect "\d+" "12345" "12345"
+expect -notMatch "\d+" "a345" 
+expect "\d+" "13 45" "13"
