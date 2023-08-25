@@ -1,6 +1,9 @@
-﻿<pattern> ::= <character> <unary-operator>? <pattern>
-            | '(' <pattern> ')' <unary-operator>? <pattern>
+﻿<pattern> ::= <sub-pattern> <unary-operator>? <pattern>
+            | <sub-pattern> '|' <sub-pattern> <pattern>
             | ε
+            
+<sub-pattern> ::= <character> <unary-operator>? 
+                | '(' <pattern ')'
 
 <unary-operator> ::= '*'
                    | '+'

@@ -34,13 +34,32 @@ static size_t countNumLabel(char *mnemonic)
     return numLabel;
 }
 
+static int equalLabel(char *label1, char *label2)
+{
+    size_t i = 0;
+    do
+    {
+        if (isspace(label1[i]) && isspace(label2[i]))
+        {
+            return 1;
+        }
+        if (label1[i] != label2[i])
+        {
+            return 0;
+        }
+        i++;
+    } while (label1[i] && label2[i]);
+
+    return 0;
+}
+
 Inst *assemble(char *mnemonic)
 {
     size_t numLabel = countNumLabel(mnemonic);
     size_t numInst = countNumNL(mnemonic) + 1;
 
     Inst *pc = (Inst *)malloc(numInst * sizeof(Inst));
-    Inst **label = (Inst **)malloc(numLabel * sizeof(Inst *));
+    InstLabel *label = (InstLabel *)malloc(numLabel * sizeof(InstLabel));
 
     if (!pc || !label)
     {
@@ -51,7 +70,7 @@ Inst *assemble(char *mnemonic)
     }
 
     Inst *curpc = pc;
-    Inst **curlabel = label;
+    InstLabel *curlabel = label;
     char *curMnemonic = mnemonic;
     size_t num = 0;
     while (1)
@@ -67,9 +86,8 @@ Inst *assemble(char *mnemonic)
 
         if (strncmp(line, "jmp ", sizeof("jmp ") - 1) == 0)
         {
-            char **dummy = NULL;
             curpc->opcode = OP_JMP;
-            curpc->xlabel = strtoull(line + sizeof("jmp"), dummy, 10);
+            curpc->xlabel = strchr(line, ' ') + 1;
             curpc->num = num++;
             curpc++;
         }
@@ -95,16 +113,16 @@ Inst *assemble(char *mnemonic)
         }
         else if (strncmp(line, "split ", sizeof("split ") - 1) == 0)
         {
-            char *xpos = NULL, **dummy = NULL;
             curpc->opcode = OP_SPLIT;
-            curpc->xlabel = strtoull(line + sizeof("split"), &xpos, 10);
-            curpc->ylabel = strtoull(xpos, dummy, 10);
+            curpc->xlabel = strchr(line, ' ') + 1;
+            curpc->ylabel = strchr(curpc->xlabel, ' ') + 1;
             curpc->num = num++;
             curpc++;
         }
         else if (strncmp(line, "label ", sizeof("label ") - 1) == 0)
         {
-            *curlabel = curpc;
+            curlabel->pc = curpc;
+            curlabel->label = strchr(line, ' ') + 1;
             if ((size_t)(curlabel - label) < numLabel)
             {
                 curlabel++;
@@ -127,15 +145,35 @@ Inst *assemble(char *mnemonic)
     {
         if (curpc->opcode == OP_JMP)
         {
-            curpc->x = label[curpc->xlabel];
+            for (size_t i = 0; i < numLabel; i++)
+            {
+                if (equalLabel(curpc->xlabel, label[i].label))
+                {
+                    curpc->x = label[i].pc;
+                    break;
+                }
+            }
         }
         else if (curpc->opcode == OP_SPLIT)
         {
-            curpc->x = label[curpc->xlabel];
-            curpc->y = label[curpc->ylabel];
+            for (size_t i = 0; i < numLabel; i++)
+            {
+                if (equalLabel(curpc->xlabel, label[i].label))
+                {
+                    curpc->x = label[i].pc;
+                    break;
+                }
+            }
+            for (size_t i = 0; i < numLabel; i++)
+            {
+                if (equalLabel(curpc->ylabel, label[i].label))
+                {
+                    curpc->y = label[i].pc;
+                    break;
+                }
+            }
         }
     }
 
-    free(label);
     return pc;
 }

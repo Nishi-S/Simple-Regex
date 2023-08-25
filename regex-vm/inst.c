@@ -29,6 +29,8 @@ char *recursive(Inst *pc, char *sp)
             return isalnum(*sp) || *sp == '_' ? recursive(pc + 1, sp + 1) : NULL;
         case 's':
             return isspace(*sp) ? recursive(pc + 1, sp + 1) : NULL;
+        default:
+            return (pc->c == *sp) ? recursive(pc + 1, sp + 1) : NULL;
         }
 
     case OP_MATCH:

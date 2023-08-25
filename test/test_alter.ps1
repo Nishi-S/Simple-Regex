@@ -22,15 +22,11 @@ function expect
     }
 }
 
-Write-Host "============ concat test ============"
-expect "applebanana" "applebanana" "applebanana"
-expect "" "" ""
-expect -notMatch "aaa" "abc" 
-expect "(aaa)" "aaa" "aaa"
-expect "\d" "4" "4"
-expect "\d\d\d" "590" "590"
-expect "\w" "_" "_"
-expect "\s" " " " "
-expect "\\" "\aa" "\"
-expect "\\\d" "\0a" "\0"
-expect "\*\+\?\|\(\)\[\]" "*+?|()[]" "*+?|()[]"
+Write-Host "============ alternation test ============"
+expect "(a|b)+" "abaabbbaa" "abaabbbaa"
+expect "(apple)|(banana)" "apple" "apple"
+expect "(apple)|(banana)" "banana" "banana"
+expect -notMatch "(apple)|(banana)" "orange"
+expect "\d+|a\d*" "123" "123"
+expect "\d+|a\d*" "a456" "a456"
+expect "\d+|a\d*" "abc" "a"

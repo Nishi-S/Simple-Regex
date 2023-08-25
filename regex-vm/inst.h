@@ -37,11 +37,11 @@ struct Inst
     size_t num;
     union {
         Inst *x;
-        size_t xlabel;
+        char *xlabel;
     };
     union {
         Inst *y;
-        size_t ylabel;
+        char *ylabel;
     };
 };
 

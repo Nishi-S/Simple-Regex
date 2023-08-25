@@ -6,4 +6,11 @@
 #include <stdio.h>
 #include <string.h>
 
+typedef struct InstLabel InstLabel;
+struct InstLabel
+{
+    Inst *pc;
+    char *label;
+};
+
 Inst *assemble(char *mnemonic);

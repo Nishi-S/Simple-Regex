@@ -46,7 +46,7 @@ expect "k(abc)?k" "kk" "kk"
 # *+
 expect "a*a+" "a" "a"
 expect -notMatch "a*a+" ""
-expect "k(a*k+)*k" "kkakkk"
+expect "k(a*k+)*k" "kkakkk" "kkakkk"
 
 # \w \s \d
 expect "\w+" "Hello123" "Hello123"

@@ -1,89 +1,120 @@
 ﻿#include "parse.h"
 
+static void error(char *format, ...);
+// AST
 static Node *pattern(char **pregex);
-static Node *character(char c);
-static Node *escapedCharacter(char c);
+static Node *subPattern(char **pregex);
+static Node *character(char **pregex);
+static Node *unaryOperator(char op);
 static Node *empty();
 static Node *terminal();
+
 static Node *newNode(NodeKind kind, Node *lhs, Node *rhs);
-static Node *newNodeChar(char val);
-static char consume(char **pregex, char op);
+static Node *newNodeChar(char c);
+
+static char consume(char **pregex, char c);
 static char consumeChar(char **pregex);
 static char consumeUnary(char **pregex);
 static char expect(char **pregex, char expected);
-static char expectEscapedChar(char **pregex);
+
 static int isUnaryOperator(char c);
 static int isOperator(char c);
-static int isEscapedCharacter(char c);
 
 Node *parse(char *regex)
 {
     return pattern(&regex);
 }
 
-void parseError(char *subject)
+static void error(char *format, ...)
 {
-    fprintf(stderr, "パースエラー\n");
-    fprintf(stderr, "%s\n", subject);
+    va_list ap;
+    va_start(ap, format);
+    vfprintf(stderr, format, ap);
+    fprintf(stderr, "\n");
     exit(EXIT_FAILURE);
 }
 
 static Node *pattern(char **pregex)
 {
-    if (consume(pregex, '\\'))
+    Node *node = subPattern(pregex);
+
+    if (node == NULL)
     {
-        Node *node = escapedCharacter(expectEscapedChar(pregex));
-        char unary = consumeUnary(pregex);
-        if (unary)
-        {
-            node = newNode(ND_UNARY, node, NULL);
-            node->val = unary;
-        }
+        return empty();
+    }
+
+    if (isUnaryOperator(**pregex))
+    {
+        node = newNode(ND_UNARY, node, NULL);
+        node->val = consumeUnary(pregex);
         return newNode(ND_CONCAT, node, pattern(pregex));
     }
 
-    char c = consumeChar(pregex);
-    if (c)
+    if (consume(pregex, '|'))
     {
-        Node *node = character(c);
-        char unary = consumeUnary(pregex);
-        if (unary)
-        {
-            node = newNode(ND_UNARY, node, NULL);
-            node->val = unary;
-        }
+        node = newNode(ND_ALTER, node, subPattern(pregex));
         return newNode(ND_CONCAT, node, pattern(pregex));
     }
 
+    return newNode(ND_CONCAT, node, pattern(pregex));
+}
+
+static Node *subPattern(char **pregex)
+{
     if (consume(pregex, '('))
     {
         Node *node = pattern(pregex);
         expect(pregex, ')');
-        char unary = consumeUnary(pregex);
-        if (unary)
-        {
-            node = newNode(ND_UNARY, node, NULL);
-            node->val = unary;
-        }
-        return newNode(ND_CONCAT, node, pattern(pregex));
+        return node;
     }
 
-    if (**pregex == '\0')
+    Node *node = character(pregex);
+    if (isUnaryOperator(**pregex))
     {
-        return terminal();
+        node = newNode(ND_UNARY, node, NULL);
+        node->val = consumeUnary(pregex);
+    }
+    return node;
+}
+
+static Node *character(char **pregex)
+{
+    // escaped character
+    if (consume(pregex, '\\'))
+    {
+        char c = **pregex;
+        *pregex += 1;
+        return newNode(ND_ESCAPE, newNodeChar(c), NULL);
     }
 
-    return empty();
-}
+    // ranged character
+    if (consume(pregex, '['))
+    {
+        Node *node = character(pregex);
+        if (node == NULL)
+        {
+            node = empty();
+        }
 
-static Node *character(char c)
-{
-    return newNodeChar(c);
-}
+        while (consume(pregex, ']'))
+        {
+            Node *next = character(pregex);
+            if (next == NULL)
+            {
+                error("No matching closing bracket ']' found");
+            }
+            node = newNode(ND_ALTER, node, character(pregex));
+        }
+    }
 
-static Node *escapedCharacter(char c)
-{
-    return newNode(ND_ESCAPE, newNodeChar(c), NULL);
+    if (!isOperator(**pregex) && isprint(**pregex))
+    {
+        char c = **pregex;
+        *pregex += 1;
+        return newNodeChar(c);
+    }
+
+    return NULL;
 }
 
 static Node *empty()
@@ -99,30 +130,11 @@ static Node *terminal()
 static char consume(char **pregex, char op)
 {
     char c = **pregex;
-
     if (c == op)
     {
         *pregex += 1;
         return c;
     }
-
-    return '\0';
-}
-
-static char consumeChar(char **pregex)
-{
-    char c = **pregex;
-    if (isOperator(c) || c == '\0')
-    {
-        return '\0';
-    }
-
-    if (isprint(c))
-    {
-        *pregex += 1;
-        return c;
-    }
-
     return '\0';
 }
 
@@ -134,7 +146,6 @@ static char consumeUnary(char **pregex)
         *pregex += 1;
         return c;
     }
-
     return '\0';
 }
 
@@ -146,21 +157,9 @@ static char expect(char **pregex, char expected)
         *pregex += 1;
         return c;
     }
-
-    parseError(*pregex);
-    return '\0';
-}
-
-static char expectEscapedChar(char **pregex)
-{
-    char c = **pregex;
-    if (isEscapedCharacter(c))
-    {
-        *pregex += 1;
-        return c;
-    }
-
-    parseError(*pregex - 1);
+    error("%s\n"
+          "^ expected %c, but got %c\n",
+          *pregex, expected, c);
     return '\0';
 }
 
@@ -204,7 +203,6 @@ static int isUnaryOperator(char c)
     case '?':
         return c;
     }
-
     return '\0';
 }
 
@@ -215,7 +213,6 @@ static int isBinaryOperator(char c)
     case '|':
         return c;
     }
-
     return '\0';
 }
 
@@ -230,18 +227,5 @@ static int isOperator(char c)
     case '\\':
         return c;
     }
-
     return isUnaryOperator(c) || isBinaryOperator(c);
-}
-
-static int isEscapedCharacter(char c)
-{
-    switch (c)
-    {
-    case 'd':
-    case 'w':
-    case 's':
-        return c;
-    }
-    return '\0';
 }

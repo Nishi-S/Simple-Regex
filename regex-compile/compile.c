@@ -1,15 +1,15 @@
 ﻿#include "compile.h"
 
-static size_t labelNum = 0;
-
 static void genUnary(char op, Node *node, FILE *stream);
-static void genEscaped(Node *node, FILE *stream);
+static void genAlter(Node *node, FILE *stream);
 static void gen(Node *node, FILE *stream);
+static char *getLabel(char *tag);
 
 void compile(char *pattern, FILE *stream)
 {
     Node *node = parse(pattern);
     gen(node, stream);
+    fprintf(stream, "match\n");
 }
 
 static void gen(Node *node, FILE *stream)
@@ -18,7 +18,6 @@ static void gen(Node *node, FILE *stream)
     {
         if (node->val == '\0')
         {
-            fprintf(stream, "match\n");
             return;
         }
         fprintf(stream, "char %c\n", node->val);
@@ -27,6 +26,9 @@ static void gen(Node *node, FILE *stream)
 
     switch (node->kind)
     {
+    case ND_ESCAPE:
+        fprintf(stream, "echar %c\n", node->lhs->val);
+        break;
     case ND_CONCAT:
         gen(node->lhs, stream);
         gen(node->rhs, stream);
@@ -34,65 +36,100 @@ static void gen(Node *node, FILE *stream)
     case ND_UNARY:
         genUnary(node->val, node->lhs, stream);
         break;
-    case ND_ESCAPE:
-        genEscaped(node->lhs, stream);
+    case ND_ALTER:
+        genAlter(node, stream);
         break;
     }
 }
 
 static void genUnary(char op, Node *node, FILE *stream)
 {
-    size_t curLabel = labelNum;
     switch (op)
     {
-    case '*':
-        fprintf(stream, "label %zd\n", labelNum++);
-        fprintf(stream, "split %zd %zd \n", curLabel + 1, curLabel + 2);
-        fprintf(stream, "label %zd\n", labelNum++);
+    case '*': {
+        char *l1 = getLabel("*");
+        char *l2 = getLabel("*");
+        char *l3 = getLabel("*");
+        fprintf(stream, "label %s\n", l1);
+        fprintf(stream, "split %s %s\n", l2, l3);
+        fprintf(stream, "label %s\n", l2);
         gen(node, stream);
-        fprintf(stream, "jmp %zd\n", curLabel);
-        fprintf(stream, "label %zd\n", labelNum++);
+        fprintf(stream, "jmp %s\n", l1);
+        fprintf(stream, "label %s\n", l3);
+        free(l1);
+        free(l2);
+        free(l3);
         break;
-    case '?':
-        fprintf(stream, "label %zd\n", labelNum++);
-        fprintf(stream, "split %zd %zd \n", curLabel + 1, curLabel + 2);
-        fprintf(stream, "label %zd\n", labelNum++);
+    }
+    case '?': {
+        char *l1 = getLabel("?");
+        char *l2 = getLabel("?");
+        fprintf(stream, "split %s %s \n", l1, l2);
+        fprintf(stream, "label %s\n", l1);
         gen(node, stream);
-        fprintf(stream, "jmp %zd\n", curLabel);
-        fprintf(stream, "label %zd\n", labelNum++);
+        fprintf(stream, "label %s\n", l2);
+        free(l1);
+        free(l2);
         break;
-    case '+':
-        fprintf(stream, "label %zd\n", labelNum++);
+    }
+    case '+': {
+        char *l1 = getLabel("+");
+        char *l2 = getLabel("+");
+        fprintf(stream, "label %s\n", l1);
         gen(node, stream);
-        fprintf(stream, "split %zd %zd \n", curLabel, curLabel + 1);
-        fprintf(stream, "label %zd\n", labelNum++);
+        fprintf(stream, "split %s %s \n", l1, l2);
+        fprintf(stream, "label %s\n", l2);
+        free(l1);
+        free(l2);
         break;
+    }
     }
 }
 
-static void genEscaped(Node *node, FILE *stream)
+static void genAlter(Node *node, FILE *stream)
 {
-    char c = node->val;
-    size_t curLabel = labelNum;
-    switch (c)
+    char *l1 = getLabel("|");
+    char *l2 = getLabel("|");
+    char *l3 = getLabel("|");
+    fprintf(stream, "split %s %s \n", l1, l2);
+    fprintf(stream, "label %s\n", l1);
+    gen(node->lhs, stream);
+    fprintf(stream, "jmp %s\n", l3);
+    fprintf(stream, "label %s\n", l2);
+    gen(node->rhs, stream);
+    fprintf(stream, "label %s\n", l3);
+    free(l1);
+    free(l2);
+    free(l3);
+}
+
+static char *getLabel(char *tag)
+{
+    static char label[] = "aaa";
+    size_t tagLen = strlen(tag);
+
+    char *taglabel = (char *)malloc((tagLen + sizeof(label)) * sizeof(char));
+    if (!taglabel)
     {
-    case 'd':
-        fprintf(stream, "echar d\n");
-        // for (size_t i = 0; i <= 9; i++)
-        // {
-        //     curLabel = labelNum;
-        //     fprintf(stream, "split %zd %zd \n", curLabel, curLabel + 1);
-        //     fprintf(stream, "label %zd\n", labelNum++);
-        //     fprintf(stream, "char %c\n", i + '0');
-        //     fprintf(stream, "jmp %zd\n", curLabel + 1 + 2 * (9 - i));
-        //     fprintf(stream, "label %zd\n", labelNum++);
-        // }
-        break;
-    case 'w':
-        fprintf(stream, "echar w\n");
-        break;
-    case 's':
-        fprintf(stream, "echar s\n");
-        break;
+        char errMsg[100];
+        strerror_s(errMsg, sizeof(errMsg), errno);
+        fprintf(stderr, "%s", errMsg);
+        exit(EXIT_FAILURE);
     }
+
+    memcpy(taglabel, label, sizeof(label) - 1);
+    memcpy(taglabel + sizeof(label) - 1, tag, tagLen);
+    taglabel[tagLen + sizeof(label) - 1] = '\0';
+
+    for (size_t i = 0; i < sizeof(label) - 1; i++)
+    {
+        if (label[i] != 'z')
+        {
+            label[i]++;
+            break;
+        }
+        label[i] = 'a';
+    }
+
+    return taglabel;
 }
