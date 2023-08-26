@@ -14,7 +14,14 @@ function expect
     if ($ret -ne $expect)
     {
         Write-Host "`"$regex`" => `"$text`" " -NoNewline 
-        Write-Host "expect $expect, but got $ret"
+        if ($notMatch)
+        {
+            Write-Host "expect not matched, but got $ret"
+        }
+        else
+        {
+            Write-Host "expect $expect, but got $ret"
+        }
     }
     else
     {

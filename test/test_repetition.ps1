@@ -14,7 +14,14 @@ function expect
     if ($ret -ne $expect)
     {
         Write-Host "`"$regex`" => `"$text`" " -NoNewline 
-        Write-Host "expect $expect, but got $ret"
+        if ($notMatch)
+        {
+            Write-Host "expect not matched, but got $ret"
+        }
+        else
+        {
+            Write-Host "expect $expect, but got $ret"
+        }
     }
     else
     {
@@ -47,7 +54,6 @@ expect "k(abc)?k" "kk" "kk"
 expect "a*a+" "a" "a"
 expect -notMatch "a*a+" ""
 expect "k(a*k+)*k" "kkakkk" "kkakkk"
-
 # \w \s \d
 expect "\w+" "Hello123" "Hello123"
 expect "\w+" "Good_Morning" "Good_Morning"

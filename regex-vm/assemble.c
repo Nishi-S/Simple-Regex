@@ -128,6 +128,14 @@ Inst *assemble(char *mnemonic)
                 curlabel++;
             }
         }
+        else if (strncmp(line, "cclass ", sizeof("cclass ") - 1) == 0)
+        {
+            curpc->opcode = OP_CCLASS_RNG;
+            curpc->lower = strchr(line, ' ') + 1;
+            curpc->upper = strchr(curpc->xlabel, ' ') + 1;
+            curpc->num = num++;
+            curpc++;
+        }
         else
         {
             for (size_t i = 0; line[i] && line[i] != '\n'; i++)

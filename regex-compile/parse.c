@@ -1,13 +1,16 @@
 ﻿#include "parse.h"
 
 static void error(char *format, ...);
-// AST
+// Regex AST
 static Node *pattern(char **pregex);
 static Node *subPattern(char **pregex);
 static Node *character(char **pregex);
 static Node *unaryOperator(char op);
 static Node *empty();
 static Node *terminal();
+// Character Class AST
+static Node *cclass(char **pregex);
+static Node *ccCharacter(char **pregex);
 
 static Node *newNode(NodeKind kind, Node *lhs, Node *rhs);
 static Node *newNodeChar(char c);
@@ -47,13 +50,23 @@ static Node *pattern(char **pregex)
     {
         node = newNode(ND_UNARY, node, NULL);
         node->val = consumeUnary(pregex);
-        return newNode(ND_CONCAT, node, pattern(pregex));
+        Node *rhs = pattern(pregex);
+        if (rhs)
+        {
+            return newNode(ND_CONCAT, node, rhs);
+        }
+        return node;
     }
 
     if (consume(pregex, '|'))
     {
         node = newNode(ND_ALTER, node, subPattern(pregex));
-        return newNode(ND_CONCAT, node, pattern(pregex));
+        Node *rhs = pattern(pregex);
+        if (rhs)
+        {
+            return newNode(ND_CONCAT, node, rhs);
+        }
+        return node;
     }
 
     return newNode(ND_CONCAT, node, pattern(pregex));
@@ -90,23 +103,20 @@ static Node *character(char **pregex)
     // ranged character
     if (consume(pregex, '['))
     {
-        Node *node = character(pregex);
-        if (node == NULL)
+        Node *node;
+        if (consume(pregex, '^'))
         {
-            node = empty();
+            node = newNode(ND_CCLASS_NOT, cclass(pregex), NULL);
         }
-
-        while (consume(pregex, ']'))
+        else
         {
-            Node *next = character(pregex);
-            if (next == NULL)
-            {
-                error("No matching closing bracket ']' found");
-            }
-            node = newNode(ND_ALTER, node, character(pregex));
+            node = newNode(ND_CCLASS, cclass(pregex), NULL);
         }
+        expect(pregex, ']');
+        return node;
     }
 
+    // ascii character without operator
     if (!isOperator(**pregex) && isprint(**pregex))
     {
         char c = **pregex;
@@ -125,6 +135,61 @@ static Node *empty()
 static Node *terminal()
 {
     return newNodeChar('\0');
+}
+
+static Node *cclass(char **pregex)
+{
+    if (**pregex == ']' || !isprint(**pregex))
+    {
+        return NULL;
+    }
+
+    Node *lhs, *rhs;
+    lhs = ccCharacter(pregex);
+    if (consume(pregex, '-'))
+    {
+        rhs = ccCharacter(pregex);
+        if (!rhs || lhs->val > rhs->val)
+        {
+            error("%s\n"
+                  "^不正な値です\n",
+                  *pregex);
+        }
+        lhs = newNode(ND_RANGE_CC, lhs, rhs);
+    }
+    rhs = cclass(pregex);
+    if (rhs)
+    {
+        return newNode(ND_ALTER_CC, lhs, rhs);
+    }
+    return lhs;
+}
+
+static Node *ccCharacter(char **pregex)
+{
+    if (consume(pregex, '\\'))
+    {
+        char c = **pregex;
+        *pregex += 1;
+
+        Node *node1 = newNode(ND_ESCAPE, newNodeChar(c), NULL);
+        Node *node2 = cclass(pregex);
+        if (node2)
+        {
+            return newNode(ND_ALTER_CC, node1, node2);
+        }
+
+        return node1;
+    }
+
+    if (isprint(**pregex))
+    {
+        char c = **pregex;
+        *pregex += 1;
+        return newNodeChar(c);
+    }
+
+    return NULL;
 }
 
 static char consume(char **pregex, char op)

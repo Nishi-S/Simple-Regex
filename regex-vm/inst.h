@@ -27,6 +27,7 @@ typedef enum
     OP_MATCH,
     OP_JMP,
     OP_SPLIT,
+    OP_CCLASS_RNG,
 } OpcodeKind;
 
 typedef struct Inst Inst;
@@ -38,10 +39,12 @@ struct Inst
     union {
         Inst *x;
         char *xlabel;
+        char *lower;
     };
     union {
         Inst *y;
         char *ylabel;
+        char *upper;
     };
 };
 

@@ -39,6 +39,13 @@ char *recursive(Inst *pc, char *sp)
     case OP_JMP:
         return recursive(pc->x, sp);
 
+    case OP_CCLASS_RNG:
+        if (pc->lower[0] <= *sp && *sp <= pc->upper[0])
+        {
+            return recursive(pc + 1, sp + 1);
+        }
+        return NULL;
+
     case OP_SPLIT: {
         char *ret = recursive(pc->x, sp);
         if (ret != NULL)

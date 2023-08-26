@@ -1,3 +1,4 @@
+
 $compiler = Get-ChildItem ".\x64\Release\*compile*.exe" 
 $vm = Get-ChildItem ".\x64\Release\*vm*.exe" 
 
@@ -29,11 +30,19 @@ function expect
     }
 }
 
-Write-Host "============ alternation test ============"
-expect "(a|b)+" "abaabbbaa" "abaabbbaa"
-expect "(apple)|(banana)" "apple" "apple"
-expect "(apple)|(banana)" "banana" "banana"
-expect -notMatch "(apple)|(banana)" "orange"
-expect "\d+|a\d*" "123" "123"
-expect "\d+|a\d*" "a456" "a456"
-expect "\d+|a\d*" "abc" "a"
+Write-Host "============ character class test ============"
+expect "[abc]" "a" "a"
+expect "[abc]" "b" "b"
+expect -notMatch "[abc]" "x" 
+expect "[0-9]" "5" "5"
+expect -notMatch "[0-9]" "a" 
+expect "[A-Za-z0-9]" "3" "3"
+expect -notMatch "[A-Za-z0-9]" "%"
+
+expect "[0-9]+" "123456789054" "123456789054"
+expect -notMatch "[0-9]+" "abc"
+expect "[A-Za-z]*" "HelloWorld" "HelloWorld"
+expect -notMatch "[A-Za-z]+" "123"
+expect "[A-Za-z]*" "123" ""
+expect "[0-9]+[a-f]+" "123abc" "123abc"
+expect -notMatch "[0-9]+[a-f]+" "123XYZX"

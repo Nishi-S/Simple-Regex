@@ -14,4 +14,12 @@
               | <ascii-character-without-operator>
 
 <escaped-character> ::= '\' ( 'd' | 'w' | 's' )
-<ranged-character> ::= '[' <character>+ ']' 
+
+<ranged-character> ::= '[' '^'? <character-class>* ']' 
+
+<character-class> :: = <cc-character> <character-class> 
+                     | <cc-character> '-' <cc-character> <character-class>
+                     | ε 
+
+<cc-character> ::= <ascii-character-without-cc-operator> 
+                 | <escaped-character>

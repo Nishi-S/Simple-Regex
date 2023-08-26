@@ -1,8 +1,10 @@
 ﻿#include "compile.h"
 
-static void genUnary(char op, Node *node, FILE *stream);
-static void genAlter(Node *node, FILE *stream);
 static void gen(Node *node, FILE *stream);
+static void genAlter(Node *node, FILE *stream);
+static void genUnary(char op, Node *node, FILE *stream);
+static void genCClass(Node *node, FILE *stream);
+static void genCClassAlter(Node *node, FILE *stream);
 static char *getLabel(char *tag);
 
 void compile(char *pattern, FILE *stream)
@@ -38,6 +40,9 @@ static void gen(Node *node, FILE *stream)
         break;
     case ND_ALTER:
         genAlter(node, stream);
+        break;
+    case ND_CCLASS:
+        genCClass(node->lhs, stream);
         break;
     }
 }
@@ -97,6 +102,49 @@ static void genAlter(Node *node, FILE *stream)
     fprintf(stream, "jmp %s\n", l3);
     fprintf(stream, "label %s\n", l2);
     gen(node->rhs, stream);
+    fprintf(stream, "label %s\n", l3);
+    free(l1);
+    free(l2);
+    free(l3);
+}
+
+static void genCClass(Node *node, FILE *stream)
+{
+    if (node->kind == ND_CHAR_CC)
+    {
+        if (node->val == '\0')
+        {
+            return;
+        }
+        fprintf(stream, "char %c\n", node->val);
+        return;
+    }
+
+    switch (node->kind)
+    {
+    case ND_ESCAPE_CC:
+        fprintf(stream, "echar %c\n", node->val);
+        break;
+    case ND_ALTER_CC:
+        genCClassAlter(node, stream);
+        break;
+    case ND_RANGE_CC:
+        fprintf(stream, "cclass %c %c\n", node->lhs->val, node->rhs->val);
+        break;
+    }
+}
+
+static void genCClassAlter(Node *node, FILE *stream)
+{
+    char *l1 = getLabel("|");
+    char *l2 = getLabel("|");
+    char *l3 = getLabel("|");
+    fprintf(stream, "split %s %s \n", l1, l2);
+    fprintf(stream, "label %s\n", l1);
+    genCClass(node->lhs, stream);
+    fprintf(stream, "jmp %s\n", l3);
+    fprintf(stream, "label %s\n", l2);
+    genCClass(node->rhs, stream);
     fprintf(stream, "label %s\n", l3);
     free(l1);
     free(l2);
