@@ -23,7 +23,7 @@ struct MatchResult
 typedef enum
 {
     OP_CHAR,
-    OP_ECHAR,
+    OP_ECHAR, // escaped char
     OP_MATCH,
     OP_JMP,
     OP_SPLIT,
@@ -49,4 +49,3 @@ struct Inst
 };
 
 MatchResult vm(Inst *pc, char *sp);
-char *recursive(Inst *pc, char *sp);

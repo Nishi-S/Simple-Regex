@@ -1,9 +1,16 @@
 ﻿#include "assemble.h"
 
-static size_t countNumNL(char *mnemonic)
+typedef struct InstLabel InstLabel;
+struct InstLabel
+{
+    Inst *pc;
+    char *label;
+};
+
+static size_t countNumNewLine(char *assembler)
 {
     size_t numNewLine = 0;
-    for (char *c = mnemonic; *c; c++)
+    for (char *c = assembler; *c; c++)
     {
         if (c[1] == '\0')
         {
@@ -18,17 +25,17 @@ static size_t countNumNL(char *mnemonic)
     return numNewLine;
 }
 
-static size_t countNumLabel(char *mnemonic)
+static size_t countNumLabel(char *assembler)
 {
     size_t numLabel = 0;
     while (1)
     {
-        mnemonic = strstr(mnemonic, "label");
-        if (mnemonic == NULL)
+        assembler = strstr(assembler, "label");
+        if (assembler == NULL)
         {
             break;
         }
-        mnemonic += sizeof("label") - 1;
+        assembler += sizeof("label") - 1;
         numLabel++;
     }
     return numLabel;
@@ -53,10 +60,10 @@ static int equalLabel(char *label1, char *label2)
     return 0;
 }
 
-Inst *assemble(char *mnemonic)
+Inst *assemble(char *assembler)
 {
-    size_t numLabel = countNumLabel(mnemonic);
-    size_t numInst = countNumNL(mnemonic) + 1;
+    size_t numLabel = countNumLabel(assembler);
+    size_t numInst = countNumNewLine(assembler) + 1;
 
     Inst *pc = (Inst *)malloc(numInst * sizeof(Inst));
     InstLabel *label = (InstLabel *)malloc(numLabel * sizeof(InstLabel));
@@ -71,12 +78,12 @@ Inst *assemble(char *mnemonic)
 
     Inst *curpc = pc;
     InstLabel *curlabel = label;
-    char *curMnemonic = mnemonic;
+    char *curAsm = assembler;
     size_t num = 0;
     while (1)
     {
-        char *line = curMnemonic;
-        char *nl = strchr(curMnemonic, '\n');
+        char *line = curAsm;
+        char *nl = strchr(curAsm, '\n');
 
         if (nl == NULL)
         {
@@ -146,7 +153,7 @@ Inst *assemble(char *mnemonic)
             fprintf(stderr, "^ 対応していない命令列です\n");
             exit(EXIT_FAILURE);
         }
-        curMnemonic = nl + 1;
+        curAsm = nl + 1;
     }
 
     for (curpc = pc; curpc->opcode != OP_MATCH; curpc++)

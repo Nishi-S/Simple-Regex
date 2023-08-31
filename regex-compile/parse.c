@@ -23,9 +23,9 @@ static char expect(char **pregex, char expected);
 static int isUnaryOperator(char c);
 static int isOperator(char c);
 
-Node *parse(char *regex)
+AST *parse(char *regex)
 {
-    return pattern(&regex);
+    return (AST *)pattern(&regex);
 }
 
 static void error(char *format, ...)

@@ -27,6 +27,7 @@ typedef enum
     ND_RANGE_CC,
 } NodeKindCClass;
 
+typedef struct Node AST;
 typedef struct Node Node;
 struct Node
 {
@@ -39,4 +40,4 @@ struct Node
     Node *rhs;
 };
 
-Node *parse(char *regex);
+AST *parse(char *regex);

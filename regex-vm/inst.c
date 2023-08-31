@@ -1,5 +1,7 @@
 #include "inst.h"
 
+static char *recursive(Inst *pc, char *sp);
+
 MatchResult vm(Inst *pc, char *sp)
 {
     MatchResult result;
@@ -9,7 +11,9 @@ MatchResult vm(Inst *pc, char *sp)
     return result;
 }
 
-char *recursive(Inst *pc, char *sp)
+// 参考：正規表現技術入門 ――最新エンジン実装と理論的背景
+// https://direct.gihyo.jp/view/item/000000001892
+static char *recursive(Inst *pc, char *sp)
 {
     switch (pc->opcode)
     {
@@ -26,7 +30,7 @@ char *recursive(Inst *pc, char *sp)
         case 'd':
             return isdigit(*sp) ? recursive(pc + 1, sp + 1) : NULL;
         case 'w':
-            return isalnum(*sp) || *sp == '_' ? recursive(pc + 1, sp + 1) : NULL;
+            return (isalnum(*sp) || *sp == '_') ? recursive(pc + 1, sp + 1) : NULL;
         case 's':
             return isspace(*sp) ? recursive(pc + 1, sp + 1) : NULL;
         default:
