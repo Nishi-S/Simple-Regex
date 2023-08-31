@@ -28,11 +28,11 @@ VM型の正規表現エンジンをCで実装したプロジェクトです。
 | `a\|b`          | `a`または`b`にマッチ                          |
 
 # 使用方法
-'''
+```
 PS > .\regex-compile.exe "a*bc" | .\regex-vm.exe "aabcdef"
 aabc
-'''
-'''
+```
+```
 PS > .\regex-compile.exe "(a|b)*" | .\regex-vm.exe "aba"
 aba
-'''
+```
